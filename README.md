@@ -1,4 +1,4 @@
-# #Geodesign Hub compatible Landuse Allocation Model
+##Geodesign Hub compatible Landuse Allocation Model
 A demand-based, evaluation-weighted, geodesign designated land use allocation model
 
 ###Overview
