@@ -9,7 +9,6 @@ from operator import itemgetter
 from rtree import Rtree
 from shapely.validation import explain_validity
 from functools import partial
-import pyproj
 from shapely.ops import unary_union
 from shapely import speedups
 if speedups.available:
