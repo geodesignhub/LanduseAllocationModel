@@ -178,11 +178,9 @@ if __name__ == "__main__":
 
 			except AssertionError as e:
 				pass
-		if allFeatShapes and cursysfeat['allocationtype'] =='random':
-			allShapes = [myShapesHelper.createUnaryUnion(allFeatShapes)]
+		# if allFeatShapes and cursysfeat['allocationtype'] =='random':
+		allShapes = [myShapesHelper.createUnaryUnion(allFeatShapes)]
 
-		else:
-			allShapes =[]
 		print "Processed {0} features from {1} system.".format(len(allFeatShapes),cursysfeat['name'])
 		sysAreaToBeAllocated.append({'name':cursysfeat['name'],'system':cursysfeat['system'], 'priority':cursysfeat['priority'], 'type':cursysfeat['allocationtype'], 'targetarea':cursysfeat['target'], 'shapes':allShapes,'area':shparea, 'alreadyallocated': Rtree()})
 
@@ -204,7 +202,6 @@ if __name__ == "__main__":
 		curSysPriority = curSysAreaToBeAllocated['priority']
 		curSysName = curSysAreaToBeAllocated['name']
 		for curAllocationColor in colorPrefs: # iterate over the colors
-
 			curEFeatRtree = evalfeatures['rtree'][curAllocationColor] #get the rtree of the eval color
 			# totalEvalFeats = evalfeatures['features'][curAllocationColor]
 			modifiedevalFeats =[] # a list to hold the evaluation features that have allocated = true for this color
@@ -215,7 +212,6 @@ if __name__ == "__main__":
 					iFeats = [n for n in curEFeatRtree.intersection(bnds)] # check how many eval features intersect with the input
 
 					if iFeats and curSysAreaToBeAllocated['type'] == 'random':
-
 						random.shuffle(iFeats)
 
 
@@ -282,42 +278,7 @@ if __name__ == "__main__":
 				evalfeatures['features'][curAllocationColor] = [x for x in evalfeatures['features'][curAllocationColor] if x['id'] != curmodifiedFeat['id']]
 				evalfeatures['features'][curAllocationColor].append(curmodifiedFeat)
 
-
-			# if totalIntersectedArea < curSysAreaToBeAllocated['targetarea']:
-			# # all areas that intersect have been allocated if there is more to be allocated, allocate now till everything is allocated in this color
-			# 	curEFeatRtree = evalfeatures['rtree'][curAllocationColor]
-			# 	totalEvalFeats = evalfeatures['features'][curAllocationColor]
-			# 	sortedNearestFeats = []
-			# 	sortedFeatCounter =0
-			# 	while sortedFeatCounter != len(totalEvalFeats):
-			# 		nearestFeats =  myRTreeHelper.getNearestBounds(curEFeatRtree, lastfeatbounds)
-			# 		sortedNearestFeats.extend(nearestFeats)
-			# 		allNearestBounds  =[]
-			# 		for curNearestFeat in nearestFeats:
-			# 			i = (item for item in evalfeatures['features'][curAllocationColor] if item["id"] == random.choice(nearestFeats)).next()
-			# 			allNearestBounds.append(i['bounds'])
-			# 		lastfeatbounds = myRTreeHelper.extendbounds(allNearestBounds)
-			# 		sortedNearestFeats = myRTreeHelper.uniqify(sortedNearestFeats)
-			# 		print sortedNearestFeats
-			# 		sortedFeatCounter = len(sortedNearestFeats)
-			# 		# print sortedFeatCounter, len(totalEvalFeats)
-
-
-			# 	for cursortedFeat in sortedNearestFeats:
-			# 		curevalfeat = (item for item in evalfeatures['features'][curAllocationColor] if item["id"] == cursortedFeat).next()
-
-			# 		if curevalfeat['allocated'] == True:
-			# 			pass
-
-			# 		else:
-			# 			# 	allocate
-			# 			curevalfeat['allocated'] == True
-			# 			# append to geoms
-			# 			totalAllocatedGeoms.insert(curevalfeat['id'],curevalfeat['bounds'])
-			# 			alreadyAllocatedFeats.append(curevalfeat['shp'])
-			# 			totalIntersectedArea  += curevalfeat['area']
-
-		print "Allocated " + str(totalIntersectedArea) + " Acres"
+		print "Allocated " + str(totalIntersectedArea) + " " + units
 		print "Writing Output file.."
 		newGeoms = []
 		for curAllocation in alreadyAllocatedFeats:
