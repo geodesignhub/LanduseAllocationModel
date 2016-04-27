@@ -54,7 +54,7 @@ class ShapesFactory():
 		return allDsgnPlygons
 
 
-	def generateShapeArea(self, feature):
+	def generateShapeArea(self, feature, units):
 
 		geom = feature['geometry']
 		if len(geom['coordinates']) > 2:
@@ -68,7 +68,8 @@ class ShapesFactory():
 		# # print (shape(geomp).area)
 		s = shape(geomp)
 		featureArea = (s.area)
-		fArea = featureArea * 0.000247105
+		multiplier = 0.000247105 if areaunit == 'acres' else 0.001
+		fArea = featureArea * multiplier
 		return fArea
 
 class RTreeHelper():
@@ -97,6 +98,7 @@ curPath = os.path.dirname(os.path.realpath(__file__))
 
 if __name__ == "__main__":
 	# geodesign hub API client
+	units = config.units
 	print "Starting Allocation Model.."
 	myAPIHelper = GeodesignHub.GeodesignHubClient(url = config.apisettings['serviceurl'], project_id=config.apisettings['projectid'], token=config.apisettings['apitoken'])
 	# to genetate a shape out of a geometry.
@@ -133,7 +135,7 @@ if __name__ == "__main__":
 			try:
 				assert shp != 0
 				bounds = shp.bounds
-				featureArea = myShapesHelper.generateShapeArea(curFeature)
+				featureArea = myShapesHelper.generateShapeArea(curFeature, units)
 				fid = random.randint(1, 900000000)
 				areatype = curFeature['properties']['areatype']
 				evalfeatcollection[areatype].append({'id':fid,'shape':shp, 'bounds':bounds,'areatype':areatype,'area':featureArea, 'allocated':False})
@@ -172,7 +174,7 @@ if __name__ == "__main__":
 				allFeatShapes.append(shp)
 				ft =  json.loads(shapelyHelper.export_to_JSON(curFeature['geometry']))
 				ft = myShapesHelper.genFeature(ft)
-				shparea = myShapesHelper.generateShapeArea(ft)
+				shparea = myShapesHelper.generateShapeArea(ft, units)
 
 			except AssertionError as e:
 				pass
@@ -246,9 +248,9 @@ if __name__ == "__main__":
 											ft = myShapesHelper.multiPolytoFeature(ft['geometry'])
 											for feat in ft:
 												feat = myShapesHelper.genFeature(feat)
-												area += myShapesHelper.generateShapeArea(feat)
+												area += myShapesHelper.generateShapeArea(feat, units)
 										else:
-											area = myShapesHelper.generateShapeArea(ft)
+											area = myShapesHelper.generateShapeArea(ft, units)
 										totalIntersectedArea += area
 										curevalfeat['allocated'] = True
 										modifiedevalFeats.append(curevalfeat)
@@ -268,9 +270,9 @@ if __name__ == "__main__":
 										f1 = myShapesHelper.multiPolytoFeature(f1['geometry'])
 										for feat in f1:
 											feat = myShapesHelper.genFeature(feat)
-											area += myShapesHelper.generateShapeArea(feat)
+											area += myShapesHelper.generateShapeArea(feat, units)
 									else:
-										area = myShapesHelper.generateShapeArea(f1)
+										area = myShapesHelper.generateShapeArea(f1, units)
 
 									totalIntersectedArea += area
 									curevalfeat['allocated'] = True
