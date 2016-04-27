@@ -32,8 +32,8 @@ python GDHAllocationModel.py
 
 ###Inputs
 There are two inputs for this script both configured through config.py
-1. Gridded evaluation files (see below)
-2. Feature colleciton input of selected diagrams (projects only) that can be downloaded via the Geodesign Hub [API](http://www.geodesignsupport.com/kb/get-methods/)
+- Gridded evaluation files (see below)
+- Feature colleciton input of selected diagrams (projects only) that can be downloaded via the Geodesign Hub [API](http://www.geodesignsupport.com/kb/get-methods/)
 
 ###Outputs
 In the output directory, the script will produce a allocated output for each of the systems based on the targets setup in the config file. For the moment, you can ignore the allocation type option. The output will be produced in GeoJSON and in EPSG 4326 projection. It can be uploaded back to Geodesign Hub
