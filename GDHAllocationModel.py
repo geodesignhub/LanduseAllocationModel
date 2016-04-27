@@ -68,7 +68,7 @@ class ShapesFactory():
 		# # print (shape(geomp).area)
 		s = shape(geomp)
 		featureArea = (s.area)
-		multiplier = 0.000247105 if areaunit == 'acres' else 0.001
+		multiplier = 0.000247105 if units == 'acres' else 0.001
 		fArea = featureArea * multiplier
 		return fArea
 
