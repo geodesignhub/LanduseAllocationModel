@@ -12,7 +12,8 @@ evalsandpriority = [
 	]
 
 featurefilesandpriority = [
-	{"priority":1, "featuresfilename": "input-features/ind.geojson", "system":1, "name":"Industry", "units":"acres","target": 10000, "allocationtype":"cluster"},
-	{"priority":2, "featuresfilename": "input-features/housing.geojson", "system":2, "name":"Housing", "target":7000,"units":"acres", "allocationtype":"cluster"},
-	{"priority":3, "featuresfilename": "input-features/ldhousing.geojson", "system":3, "name":"LD Housing", "target":10000,"units":"acres", "allocationtype":"random"}
+	{"priority":1, "featuresfilename": "input-features/ind.geojson", "system":1, "name":"Industry","target": 10000, "allocationtype":"cluster"},
+	{"priority":2, "featuresfilename": "input-features/housing.geojson", "system":2, "name":"Housing", "target":7000, "allocationtype":"cluster"},
+	{"priority":3, "featuresfilename": "input-features/ldhousing.geojson", "system":3, "name":"LD Housing", "target":10000, "allocationtype":"random"}
 ]
+units = "hectares" # can only be acres or hectares
