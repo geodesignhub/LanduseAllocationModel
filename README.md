@@ -11,10 +11,10 @@ This repository is a simple demand based evaluation weighted land use allocation
 - Sort the stored ids for each evaluation map grouped by the color
 - Get designed features from Geodesign Hub
 - Start with the first priority evaluation and first priority system.
-- Start with Green2 (most suitable / preferred) location in the evaluation map. 
+- Start with Green2 (most feasable) location in the evaluation map. 
 - Intersect the current feature with the evaluation, allocate if intersected
   - If not intersected move to the next designed feature or evaluation feature
-- Contintue till either out of features or target reached. 
+- Contintue to the next most suitable (green) and next most capable (yello) till either there are no more features or target reached. Do not allocate on red or red2 
 
 
 ### Prerequisites
