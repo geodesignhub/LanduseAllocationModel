@@ -93,8 +93,10 @@ class RTreeHelper():
 
 		return (mins['minx'], mins['miny'], maxs['maxx'], maxs['maxy'])
 
-curPath = os.path.dirname(os.path.realpath(__file__))
-# SOURCE_FILE_SHARE = os.path.join(curPath, 'input')
+
+# curPath = os.path.dirname(os.path.realpath(__file__))
+curPath = os.path.dirname(os.path.abspath(__file__))
+
 
 if __name__ == "__main__":
 	# geodesign hub API client
