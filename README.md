@@ -44,3 +44,6 @@ For the purposes of allocation the evaluation GeoJSON files built for Geodesign 
 
 #### Update config.py
 Config.py has a sample configuration, modify it for your purposes. 
+
+#### Video tutorial
+[![YouTube Video tutorial](http://i.imgur.com/3KNhYft.png)](https://www.youtube.com/watch?v=QFbOM5T2eQQ)
