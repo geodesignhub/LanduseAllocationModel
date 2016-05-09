@@ -147,10 +147,10 @@ if __name__ == "__main__":
 		filename = os.path.join(curPath, cureval['evalfilename'])
 		with open(filename) as data_file:
 			try:
-		    	geoms = json.load(data_file)
-		    except Exception as e: 
-		    	print "Error in loading evaluation geometries, please check if it is a valid JSON."
-		    	sys.exit(0)
+				geoms = json.load(data_file)
+			except Exception as e: 
+				print "Error in loading evaluation geometries, please check if it is a valid JSON."
+				sys.exit(0)
 
 		# iterate over the geometry features.
 		for curFeature in geoms['features']:
@@ -174,10 +174,11 @@ if __name__ == "__main__":
 				fid = random.randint(1, 900000000)
 				# check the areatype
 				areatype = curFeature['properties']['areatype']
-				# input the shape and details in the collections
-				evalfeatcollection[areatype].append({'id':fid,'shape':shp, 'bounds':bounds,'areatype':areatype,'area':featureArea, 'allocated':False})
-				# insert the bounds and id into the rtree, the id is used to get the shape later. 
-				evalfeatRtree[areatype].insert(fid,bounds)
+				if areatype in evalfeatcollection.keys():
+					# input the shape and details in the collections
+					evalfeatcollection[areatype].append({'id':fid,'shape':shp, 'bounds':bounds,'areatype':areatype,'area':featureArea, 'allocated':False})
+					# insert the bounds and id into the rtree, the id is used to get the shape later. 
+					evalfeatRtree[areatype].insert(fid,bounds)
 			except AssertionError as e:
 				pass
 
@@ -265,44 +266,41 @@ if __name__ == "__main__":
 							try:
 								# Since this is the first system, create a allreaded allocated RTree
 								assert syscounter != 0
-
-								intersection = 0
-								try:
-									intersection = curevalfeat['shape'].intersection(curFeat)
-								except Exception as e:
-									pass
-								if intersection:
-									curSysAreaToBeAllocated['alreadyallocated'].insert(curevalfeat['id'],curevalfeat['bounds'])
-									alreadyAllocatedFeats.append(intersection)
-									ft =  json.loads(shapelyHelper.export_to_JSON(intersection))
-									ft = myShapesHelper.genFeature(ft)
-									if ft['geometry']['type'] == 'MultiPolygon':
-										ft = myShapesHelper.multiPolytoFeature(ft['geometry'])
-										for feat in ft:
-											feat = myShapesHelper.genFeature(feat)
-											area += myShapesHelper.generateShapeArea(feat, units)
-									else:
-										area = myShapesHelper.generateShapeArea(ft, units)
-									totalIntersectedArea += area
-									curevalfeat['allocated'] = True
-									modifiedevalFeats.append(curevalfeat)
-							except AssertionError as ae:
 								# get a list of rTrees that have lower priority than this system. example if the current sys priority is 2, get the priority 1 already allocated features. This is to ensure that 
 								prevRTrees = [x['alreadyallocated'] for x in sysAreaToBeAllocated if x['priority'] < curSysPriority]
 								l = []
 								for prevRTree in prevRTrees:
 									l.extend(list(prevRTree.intersection(curevalfeat['bounds'])))
-								# if there is a already existing feature, then dont allocate
 								if l:
 									pass
-								# if there is no intersection with already allocated geometries, then allocate it. 
 								else:
 									intersection = 0
 									try:
 										intersection = curevalfeat['shape'].intersection(curFeat)
 									except Exception as e:
 										pass
-									
+									if intersection:
+										curSysAreaToBeAllocated['alreadyallocated'].insert(curevalfeat['id'],curevalfeat['bounds'])
+										alreadyAllocatedFeats.append(intersection)
+										ft =  json.loads(shapelyHelper.export_to_JSON(intersection))
+										ft = myShapesHelper.genFeature(ft)
+										if ft['geometry']['type'] == 'MultiPolygon':
+											ft = myShapesHelper.multiPolytoFeature(ft['geometry'])
+											for feat in ft:
+												feat = myShapesHelper.genFeature(feat)
+												area += myShapesHelper.generateShapeArea(feat, units)
+										else:
+											area = myShapesHelper.generateShapeArea(ft, units)
+										totalIntersectedArea += area
+										curevalfeat['allocated'] = True
+										modifiedevalFeats.append(curevalfeat)
+							except AssertionError as ae:
+									intersection = 0
+									try:
+										intersection = curevalfeat['shape'].intersection(curFeat)
+									except Exception as e:
+										pass
+
 									if intersection:
 										curSysAreaToBeAllocated['alreadyallocated'].insert(curevalfeat['id'],curevalfeat['bounds'])
 										alreadyAllocatedFeats.append(intersection)
