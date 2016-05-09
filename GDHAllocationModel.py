@@ -13,14 +13,30 @@ from shapely.ops import unary_union
 from shapely import speedups
 if speedups.available:
         speedups.enable()
+'''
+GDH Compatible Land Use Allocation Model
+
+This model takes in gridded evaluation files and input features from Geodesign Hub (www.geodesignhub.com) and allocates them. 
+
+Projection: Geodesign Hub uses EPSG 4326 / WGS 94 (http://epsg.io/4326) and all GeoJSON files should be in that projection.
+
+This is the main file the other files are as follows: 
+config.py: This file contains the configuration and input evaluation and features files and also settings for system prirority. 
+GeodesignHub.py : This is the Geodesign Hub client written in Python, it is useful for interacting with the Geodesign Hub API. 
+shapelyHelper.py: This file is a helper class for Shapely (https://pypi.python.org/pypi/Shapely) the Python library used for spatial analysis. 
+'''
+
 class ShapesFactory():
+	''' A class to help in geometry operations '''
 	def multiPolytoFeature(self, mp):
+		''' Given Multipolygons, convert them into single polygon '''
 		feats =[]
 		for curCoords in mp['coordinates']:
 			feats.append({'type':'Polygon','coordinates':curCoords})
 		return feats
 
 	def genFeature(self, coords):
+		''' Given a set of coordinates return a Feature, useful when converting from Multipolygon -> Polygon '''
 		f = {}
 		f['type']= 'Feature'
 		f['properties']= {}
@@ -28,15 +44,16 @@ class ShapesFactory():
 		return f
 
 	def createUnaryUnion(self, allAreas):
-		''' Given a set of areas, this class constructs a unary union for them '''
+		''' Given a set of areas, this method constructs a unary union for them '''
 		try:
 			# Construct a unary_union assume that there are no errors in
 			# geometry.
 			allDsgnPlygons = unary_union(allAreas)
 		except Exception, e1:
-			# print "OK"
 			# If there are errors while consutrcuting the union, examine the
-			# geometries further to seperate
+			# geometries further to seperate to just valid polygons. To avoid this error, 
+			# ensure that the evaluation features are topologically correct, usually use a 
+			# Geometry checker in GIS tools. 
 			s1All = []
 			try:
 			    s1Polygons = MultiPolygon([x for x in allAreas if (
@@ -44,8 +61,7 @@ class ShapesFactory():
 			    if s1Polygons:
 			        s1All.append(s1Polygons)
 			except Exception, e:
-			    logging.error(
-			        'SpatialimpactCalculator.py Error in CreateUnaryUnion Polygon: %s' % e)
+			    logging.error('Error in CreateUnaryUnion Polygon: %s' % e)
 			if s1All:
 			    allDsgnPlygons = unary_union(s1All)
 			else:
@@ -55,34 +71,41 @@ class ShapesFactory():
 
 
 	def generateShapeArea(self, feature, units):
-
+		''' Given a feature compute the area in the given units. Acceptable units are acres or hectares. 
+		This function converts the feature in AEA (http://mathworld.wolfram.com/AlbersEqual-AreaConicProjection.html) to approximate
+		the total area. '''
 		geom = feature['geometry']
 		if len(geom['coordinates']) > 2:
 		    geom['coordinates'] = geom['coordinates'][:2]
 		lon, lat = zip(*geom['coordinates'][0])
 		from pyproj import Proj
 		pa = Proj("+proj=aea")
+		# alternative WGS 1984
 		# pa = Proj("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 		x, y = pa(lon, lat)
 		geomp = {"type": "Polygon", "coordinates": [zip(x, y)]}
-		# # print (shape(geomp).area)
 		s = shape(geomp)
 		featureArea = (s.area)
+		# default is hectares, if in acres, convert by using the multiplier. 
 		multiplier = 0.000247105 if units == 'acres' else 0.001
 		fArea = featureArea * multiplier
 		return fArea
 
 class RTreeHelper():
-	def getNearestBounds(self, rtree, inputbounds, ):
+	'''This class has helper functions for the RTree Spatial Index. (https://pypi.python.org/pypi/Rtree/) '''
+	def getNearestBounds(self, rtree, inputbounds,):
+		''' Given a set of input bounds, return a list of nearest bounds from the index ''' 
 		l = list(rtree.nearest(inputbounds, 1))
 		return l
 
 	def uniqify(self, seq):
+		''' Given a set of bounds keep only the uniques '''
 		seen = set()
 		seen_add = seen.add
 		return [x for x in seq if not (x in seen or seen_add(x))]
 
 	def extendBounds(self, origbounds, newboundslist):
+		''' Given two bounds (in WGS 1984) lant long extend the bounds '''
 		mins ={'minx':origbounds[0],'miny':origbounds[1]}
 		maxs = {'maxx':origbounds[2],'maxy':origbounds[3]}
 		for curbounds in newboundslist:
@@ -94,89 +117,112 @@ class RTreeHelper():
 		return (mins['minx'], mins['miny'], maxs['maxx'], maxs['maxy'])
 
 
-# curPath = os.path.dirname(os.path.realpath(__file__))
+# Set the current path so that the evaluation and feature folders can be reads.
 curPath = os.path.dirname(os.path.abspath(__file__))
 
 
 if __name__ == "__main__":
-	# geodesign hub API client
+	# Read and set the units. 
 	units = config.units
-	print "Starting Allocation Model.."
+	# Set up the API Client
 	myAPIHelper = GeodesignHub.GeodesignHubClient(url = config.apisettings['serviceurl'], project_id=config.apisettings['projectid'], token=config.apisettings['apitoken'])
-	# to genetate a shape out of a geometry.
+	# Create instances of our helper classes
 	myShapesHelper = ShapesFactory()
 	myRTreeHelper = RTreeHelper()
 	# read the evaluations from the config file
 	evalspriority = config.evalsandpriority
-	# a list to store the shapes per areatype and system
-
+	# a ordered list to store the shapes per areatype and system. # TODO: User a OrderedDict 
 	allEvalSortedFeatures = []
 	# iterate over the evaluations
 
+	print "Starting Allocation Model.."
+	# iterate over the evaluations
 	for cureval in evalspriority:
 		print "Preparing Evaluations.."
-
-		# a dictionary to hold features
-		evalfeatcollection = {'green2':[], 'green':[], 'yellow':[], 'red':[], 'red2':[]}
-		evalfeatRtree = {'green2': Rtree(), 'green': Rtree() , 'yellow':Rtree(), 'red':Rtree(), 'red2':Rtree()}
+		# a dictionary to hold features, we will ignore the red and red2 since allocation should not happen here. 
+		evalfeatcollection = {'green2':[], 'green':[], 'yellow':[]}
+		# A dictionary to store the index of the features. 
+		evalfeatRtree = {'green2': Rtree(), 'green': Rtree() , 'yellow':Rtree()}
 		# open evaluation file
 		filename = os.path.join(curPath, cureval['evalfilename'])
 		with open(filename) as data_file:
-		    geoms = json.load(data_file)
+			try:
+		    	geoms = json.load(data_file)
+		    except Exception as e: 
+		    	print "Error in loading evaluation geometries, please check if it is a valid JSON."
+		    	sys.exit(0)
 
 		# iterate over the geometry features.
 		for curFeature in geoms['features']:
 			shp = 0
+			featureArea=0
 			try:
+				# convert the JSON feature in to Shape using Shapely's asShape. 
 				shp = asShape(curFeature['geometry'])
 			except Exception as e:
-
+				# if there is a error in conversion go to the next shape. 
 				print explain_validity(shp)
 				pass
 
 			try:
 				assert shp != 0
+				# get the bounds of the shape
 				bounds = shp.bounds
+				# generate the area of the shape
 				featureArea = myShapesHelper.generateShapeArea(curFeature, units)
+				# generate a random id for the shape
 				fid = random.randint(1, 900000000)
+				# check the areatype
 				areatype = curFeature['properties']['areatype']
+				# input the shape and details in the collections
 				evalfeatcollection[areatype].append({'id':fid,'shape':shp, 'bounds':bounds,'areatype':areatype,'area':featureArea, 'allocated':False})
+				# insert the bounds and id into the rtree, the id is used to get the shape later. 
 				evalfeatRtree[areatype].insert(fid,bounds)
 			except AssertionError as e:
 				pass
 
-		print "Processed {0} green2, {1} green, {2} yellow, {3} red and {4} red2 features from {5} system.".format(len(evalfeatcollection['green2']),len(evalfeatcollection['green']),len(evalfeatcollection['yellow']),len(evalfeatcollection['red']),len(evalfeatcollection['red2']),cureval['name'])
+		print "Processed {0} green2, {1} green, {2} yellow features from {3} system.".format(len(evalfeatcollection['green2']),len(evalfeatcollection['green']),len(evalfeatcollection['yellow']),cureval['name'])
 
-		# append the features to final list
+		# Once all the evaluation features are processed, then insert it into the sorted features list including the rtree index. 
 		allEvalSortedFeatures.append({'rtree':evalfeatRtree,'system':cureval['system'],'priority':cureval['priority'], 'features':evalfeatcollection})
+		# Proceed to the next evaluation file.
 
 	# now all evaluations are in place, read the feature inputs
 	syspriority = config.featurefilesandpriority
 	# sort the dictionary so we read the most important first.
 	syspriority = sorted(syspriority, key=itemgetter('priority'), reverse=True)
-	# a list to
+	# a list to hold the processed features and their details. 
 	sysAreaToBeAllocated =[]
+	# iterate over the system files. 
 	for cursysfeat in syspriority:
 		print "Preparing Input Features.."
 		filename = os.path.join(curPath, cursysfeat['featuresfilename'])
 		with open(filename) as data_file:
-		    geoms = json.load(data_file)
+			try: 
+			    geoms = json.load(data_file)
+			except Exception as e: 
+				print "Invalid geometries in the file, please check that it is valid JSON."
+				sys.exit(0)
+		# a list to hold all shapes in this feature file
 		allFeatShapes = []
+		# iterate over the read features
 		for curFeature in geoms['features']:
-			shp = 0
-			shparea =0
+			shp=0
+			# set the default shape area to be 0
+			totalarea=0
 			try:
+				# Convert the feature into a shape. 
 				shp = asShape(curFeature['geometry'])
 			except Exception as e:
+				#if there is a error in converting to shape, describe the error. 
 				print explain_validity(shp)
 				pass
 
 			try:
 				assert shp != 0
+				# add the shape to our features list
 				allFeatShapes.append(shp)
-				ft =  json.loads(shapelyHelper.export_to_JSON(curFeature['geometry']))
-				ft = myShapesHelper.genFeature(ft)
-				shparea = myShapesHelper.generateShapeArea(ft, units)
+				totalarea += myShapesHelper.generateShapeArea(curFeature, units)
 
 			except AssertionError as e:
 				pass
@@ -184,17 +230,14 @@ if __name__ == "__main__":
 		allShapes = [myShapesHelper.createUnaryUnion(allFeatShapes)]
 
 		print "Processed {0} features from {1} system.".format(len(allFeatShapes),cursysfeat['name'])
-		sysAreaToBeAllocated.append({'name':cursysfeat['name'],'system':cursysfeat['system'], 'priority':cursysfeat['priority'], 'type':cursysfeat['allocationtype'], 'targetarea':cursysfeat['target'], 'shapes':allShapes,'area':shparea, 'alreadyallocated': Rtree()})
+		sysAreaToBeAllocated.append({'name':cursysfeat['name'],'system':cursysfeat['system'], 'priority':cursysfeat['priority'], 'type':cursysfeat['allocationtype'], 'targetarea':cursysfeat['target'], 'shapes':allShapes,'totalarea':totalarea, 'alreadyallocated': Rtree()})
 
-	# All data has been setup
+	# All data has now been setup, we start the allocaiton process. 
 	sysAreaToBeAllocated = sorted(sysAreaToBeAllocated, key=itemgetter('priority'))
-	colorPrefs = ('green2', 'green', 'yellow')#, 'red', 'red2')
-
+	colorPrefs = ('green2', 'green', 'yellow') # there is no preference for reds
+	# a counter for systems. 
 	syscounter = 0
-	#create allocated geoms rtree
-
-
-
+	# iterate over the features which are sorted by priority. 
 	for curSysAreaToBeAllocated in sysAreaToBeAllocated:
 		print "Allocating for " + curSysAreaToBeAllocated['name']
 		alreadyAllocatedFeats = [] # a object to hold already allocated features for this system.
@@ -212,69 +255,70 @@ if __name__ == "__main__":
 					bnds = curFeat.bounds # get the bounds
 					# check if there is a intersection
 					iFeats = [n for n in curEFeatRtree.intersection(bnds)] # check how many eval features intersect with the input
-
-					if iFeats and curSysAreaToBeAllocated['type'] == 'random':
+					if iFeats and curSysAreaToBeAllocated['type'] == 'random': # once the evaluation features are selected, shuffle them so that the allocaiton can be random.
 						random.shuffle(iFeats)
 
 
-					for curiFeat in iFeats: # iterate over the ids
-						if totalIntersectedArea < curSysAreaToBeAllocated['targetarea']:
+					for curiFeat in iFeats: # iterate over the evaluation features. 
+						if totalIntersectedArea < curSysAreaToBeAllocated['targetarea']: # if the area of intersectio is less then the target area. 
 							curevalfeat = (item for item in evalfeatures['features'][curAllocationColor] if item["id"] == curiFeat).next() # get the evaluation featre with the id
 							try:
-								# TODO: Try this for two systems.
+								# Since this is the first system, create a allreaded allocated RTree
 								assert syscounter != 0
-								# get a list of rTrees that have lower priority than this system.
-								prevRTrees = [x['alreadyallocated'] for x in sysAreaToBeAllocated if x['priority'] < curSysPriority]
 
+								intersection = 0
+								try:
+									intersection = curevalfeat['shape'].intersection(curFeat)
+								except Exception as e:
+									pass
+								if intersection:
+									curSysAreaToBeAllocated['alreadyallocated'].insert(curevalfeat['id'],curevalfeat['bounds'])
+									alreadyAllocatedFeats.append(intersection)
+									ft =  json.loads(shapelyHelper.export_to_JSON(intersection))
+									ft = myShapesHelper.genFeature(ft)
+									if ft['geometry']['type'] == 'MultiPolygon':
+										ft = myShapesHelper.multiPolytoFeature(ft['geometry'])
+										for feat in ft:
+											feat = myShapesHelper.genFeature(feat)
+											area += myShapesHelper.generateShapeArea(feat, units)
+									else:
+										area = myShapesHelper.generateShapeArea(ft, units)
+									totalIntersectedArea += area
+									curevalfeat['allocated'] = True
+									modifiedevalFeats.append(curevalfeat)
+							except AssertionError as ae:
+								# get a list of rTrees that have lower priority than this system. example if the current sys priority is 2, get the priority 1 already allocated features. This is to ensure that 
+								prevRTrees = [x['alreadyallocated'] for x in sysAreaToBeAllocated if x['priority'] < curSysPriority]
 								l = []
 								for prevRTree in prevRTrees:
 									l.extend(list(prevRTree.intersection(curevalfeat['bounds'])))
+								# if there is a already existing feature, then dont allocate
 								if l:
 									pass
+								# if there is no intersection with already allocated geometries, then allocate it. 
 								else:
 									intersection = 0
 									try:
 										intersection = curevalfeat['shape'].intersection(curFeat)
 									except Exception as e:
 										pass
+									
 									if intersection:
 										curSysAreaToBeAllocated['alreadyallocated'].insert(curevalfeat['id'],curevalfeat['bounds'])
 										alreadyAllocatedFeats.append(intersection)
-										ft =  json.loads(shapelyHelper.export_to_JSON(intersection))
-										ft = myShapesHelper.genFeature(ft)
-										if ft['geometry']['type'] == 'MultiPolygon':
-											ft = myShapesHelper.multiPolytoFeature(ft['geometry'])
-											for feat in ft:
+										f1 =  json.loads(shapelyHelper.export_to_JSON(intersection))
+										f1 = myShapesHelper.genFeature(f1)
+										if f1['geometry']['type'] == 'MultiPolygon':
+											f1 = myShapesHelper.multiPolytoFeature(f1['geometry'])
+											for feat in f1:
 												feat = myShapesHelper.genFeature(feat)
 												area += myShapesHelper.generateShapeArea(feat, units)
 										else:
-											area = myShapesHelper.generateShapeArea(ft, units)
+											area = myShapesHelper.generateShapeArea(f1, units)
+
 										totalIntersectedArea += area
 										curevalfeat['allocated'] = True
 										modifiedevalFeats.append(curevalfeat)
-							except AssertionError as ae:
-								intersection = 0
-								try:
-									intersection = curevalfeat['shape'].intersection(curFeat)
-								except Exception as e:
-									pass
-
-								if intersection:
-									curSysAreaToBeAllocated['alreadyallocated'].insert(curevalfeat['id'],curevalfeat['bounds'])
-									alreadyAllocatedFeats.append(intersection)
-									f1 =  json.loads(shapelyHelper.export_to_JSON(intersection))
-									f1 = myShapesHelper.genFeature(f1)
-									if f1['geometry']['type'] == 'MultiPolygon':
-										f1 = myShapesHelper.multiPolytoFeature(f1['geometry'])
-										for feat in f1:
-											feat = myShapesHelper.genFeature(feat)
-											area += myShapesHelper.generateShapeArea(feat, units)
-									else:
-										area = myShapesHelper.generateShapeArea(f1, units)
-
-									totalIntersectedArea += area
-									curevalfeat['allocated'] = True
-									modifiedevalFeats.append(curevalfeat)
 
 			for curmodifiedFeat in modifiedevalFeats:
 				evalfeatures['features'][curAllocationColor] = [x for x in evalfeatures['features'][curAllocationColor] if x['id'] != curmodifiedFeat['id']]
