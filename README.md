@@ -41,11 +41,12 @@ In the output directory, the script will produce a allocated output for each of 
 #### Creating gridded Evaluation GeoJSON
 For the purposes of allocation the evaluation GeoJSON files built for Geodesign Hub Systems need to be split into a tiny grid. This can be done in a regular GIS software. The grid size should depend on the kind of area that you are studying. Following are the steps: 
 
-1. Create a raster of the area from your vectorial maps, with resolution of 250 m (or less) and with all the cells with the same color (grid value);
-2. Convert from raster to point;
-3. Apply "Create Thiessen Polygons" using the value of the grid that are all the same. It works like Delaunay distributions and constructs regular quadrangular grids, as all the points have the same value and are distributed in regular grid.
-4. Intersect with the study area boundaries to remove shapes that are not within the study area;
-5. Using the points created in step 2, "extract values to points" from each raster of the evaluation maps. Use the same file of points, to make sure the points will always be in the same place. You may have to change the name of the column it creates because each time you extract the values from a raster. Every time you extract values from a raster it creates a column with the same name and if the column name already exists, it can be a problem.
+1. Create a raster of the area from your vector maps, with resolution of 250 m and with all the cells with the same color (grid value);
+2. Convert from raster to points;
+3. Apply "Create Thiessen Polygons" using the value of the grid that are all the same. It works like Delaunay distributions and constructs regular quadrangular grids, as all the points have the same value and are distributed in regular grid composed by squares.
+4. Cut the boundaries with the shape of the limit, and delete the polygons from the boundary that don't have the same area of the internal ones;
+5. Using the points created in step 2, "extract values to points" from each raster of the evaluation maps. Use the same file of points, to make sure the points will always be in the same place. Observe you have to change the name of the column it creates because each time you extract the values from a raster, it creates a column with the same name, if it already exists can be a problem.
+6. At this point all the values existing in the evaluation maps will be on columns in the table linked to the points. These values must go to the regular grid shape, composed by cells/squares. In the shape of regular grid squares do: “Join by Spatial Location” – to connect the values from the points to the regular grid composed by squares. Chose “Each polygon will be given all the attributes of the point that is closest to its boundary…”
 
 Thank you to [Prof. Ana Clara Moura](http://geoproea.arq.ufmg.br/equipe/prof-ana-clara-mourao-moura) for these instructions. 
 
