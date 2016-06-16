@@ -182,7 +182,7 @@ if __name__ == "__main__":
 			except AssertionError as e:
 				pass
 
-		print "Processed {0} green2, {1} green2, {2} green from system.".format(len(evalfeatcollection['green3']), len(evalfeatcollection['green2']),len(evalfeatcollection['green']),cureval['name'])
+		print "Processed {0} green3, {1} green2, {2} green from {3} system.".format(len(evalfeatcollection['green3']), len(evalfeatcollection['green2']),len(evalfeatcollection['green']),cureval['name'])
 
 		# Once all the evaluation features are processed, then insert it into the sorted features list including the rtree index. 
 		allEvalSortedFeatures.append({'rtree':evalfeatRtree,'system':cureval['system'],'priority':cureval['priority'], 'features':evalfeatcollection})
