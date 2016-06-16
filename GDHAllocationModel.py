@@ -140,9 +140,9 @@ if __name__ == "__main__":
 	for cureval in evalspriority:
 		print "Preparing Evaluations.."
 		# a dictionary to hold features, we will ignore the red and red2 since allocation should not happen here. 
-		evalfeatcollection = {'green2':[], 'green':[], 'yellow':[]}
+		evalfeatcollection = {'green3':[],'green2':[], 'green':[]}
 		# A dictionary to store the index of the features. 
-		evalfeatRtree = {'green2': Rtree(), 'green': Rtree() , 'yellow':Rtree()}
+		evalfeatRtree = {'green3':[],'green2': Rtree(), 'green': Rtree())}
 		# open evaluation file
 		filename = os.path.join(curPath, cureval['evalfilename'])
 		with open(filename) as data_file:
@@ -182,7 +182,7 @@ if __name__ == "__main__":
 			except AssertionError as e:
 				pass
 
-		print "Processed {0} green2, {1} green, {2} yellow features from {3} system.".format(len(evalfeatcollection['green2']),len(evalfeatcollection['green']),len(evalfeatcollection['yellow']),cureval['name'])
+		print "Processed {0} green2, {1} green2, {2} green from system.".format(len(evalfeatcollection['green3']), len(evalfeatcollection['green2']),len(evalfeatcollection['green']),cureval['name'])
 
 		# Once all the evaluation features are processed, then insert it into the sorted features list including the rtree index. 
 		allEvalSortedFeatures.append({'rtree':evalfeatRtree,'system':cureval['system'],'priority':cureval['priority'], 'features':evalfeatcollection})
@@ -235,7 +235,7 @@ if __name__ == "__main__":
 
 	# All data has now been setup, we start the allocaiton process. 
 	sysAreaToBeAllocated = sorted(sysAreaToBeAllocated, key=itemgetter('priority'))
-	colorPrefs = ('green2', 'green', 'yellow') # there is no preference for reds
+	colorPrefs = ('green3','green2', 'green') # there is no preference for reds
 	# a counter for systems. 
 	syscounter = 0
 	# iterate over the features which are sorted by priority. 
