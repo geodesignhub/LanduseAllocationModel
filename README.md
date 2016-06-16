@@ -44,8 +44,8 @@ For the purposes of allocation the evaluation GeoJSON files built for Geodesign 
 1. Create a raster of the area from your vectorial maps, with resolution of 250 m (or less) and with all the cells with the same color (grid value);
 2. Convert from raster to point;
 3. Apply "Create Thiessen Polygons" using the value of the grid that are all the same. It works like Delaunay distributions and constructs regular quadrangular grids, as all the points have the same value and are distributed in regular grid.
-4. Cut the boundaries with the shape of the limit, and delete the polygons from the boundary that don't have the same area of the study area boundaries;
-5. Using the points created in step 2, "extract values to points" from each raster of the evaluation maps. Use the same file of points, to make sure the points will always be in the same place. You have to change the name of the column it creates because each time you extract the values from a raster, it creates a column with the same name, if it already exists can be a problem.
+4. Intersect with the study area boundaries to remove shapes that are not within the study area;
+5. Using the points created in step 2, "extract values to points" from each raster of the evaluation maps. Use the same file of points, to make sure the points will always be in the same place. You may have to change the name of the column it creates because each time you extract the values from a raster. Every time you extract values from a raster it creates a column with the same name and if the column name already exists, it can be a problem.
 
 Thank you to [Prof. Ana Clara Moura](http://geoproea.arq.ufmg.br/equipe/prof-ana-clara-mourao-moura) for these instructions. 
 
