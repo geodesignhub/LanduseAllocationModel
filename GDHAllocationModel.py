@@ -142,7 +142,7 @@ if __name__ == "__main__":
 		# a dictionary to hold features, we will ignore the red and red2 since allocation should not happen here. 
 		evalfeatcollection = {'green3':[],'green2':[], 'green':[]}
 		# A dictionary to store the index of the features. 
-		evalfeatRtree = {'green3':[],'green2': Rtree(), 'green': Rtree()}
+		evalfeatRtree = {'green3':Rtree(),'green2': Rtree(), 'green': Rtree()}
 		# open evaluation file
 		filename = os.path.join(curPath, cureval['evalfilename'])
 		with open(filename) as data_file:
