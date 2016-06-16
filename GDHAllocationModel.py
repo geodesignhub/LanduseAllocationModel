@@ -339,6 +339,10 @@ if __name__ == "__main__":
 		transformedGeoms = {}
 		transformedGeoms['type'] = 'FeatureCollection'
 		transformedGeoms['features'] = newGeoms
+		
+		outputdirectory = os.path.join(curPath,'output')
+		if not os.path.exists(outputdirectory):
+			os.mkdirs(outputdirectory)
 		oppath =  os.path.join(curPath, 'output',str(curSysAreaToBeAllocated['name'])+'-op.geojson')
 		with open(oppath, 'w') as outFile:
 			json.dump(transformedGeoms , outFile)
