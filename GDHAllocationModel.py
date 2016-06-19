@@ -8,13 +8,13 @@ import string, random
 from operator import itemgetter
 from rtree import Rtree
 from shapely.validation import explain_validity
-from functools import partial
+from tqdm import tqdm
 from shapely.ops import unary_union
 from shapely import speedups
 if speedups.available:
         speedups.enable()
 '''
-GDH Compatible Land Use Allocation Model
+Geodesign Hub Compatible Land Use Allocation Model
 
 This model takes in gridded evaluation files and input features from Geodesign Hub (www.geodesignhub.com) and allocates them. 
 
@@ -134,11 +134,10 @@ if __name__ == "__main__":
 	# a ordered list to store the shapes per areatype and system. # TODO: User a OrderedDict 
 	allEvalSortedFeatures = []
 	# iterate over the evaluations
-
 	print "Starting Allocation Model.."
 	# iterate over the evaluations
-	for cureval in evalspriority:
-		print "Preparing Evaluations.."
+	print "Preparing Evaluations.."
+	for cureval in tqdm(evalspriority):
 		# a dictionary to hold features, we will ignore the red and red2 since allocation should not happen here. 
 		evalfeatcollection = {'green3':[],'green2':[], 'green':[]}
 		# A dictionary to store the index of the features. 
@@ -195,8 +194,9 @@ if __name__ == "__main__":
 	# a list to hold the processed features and their details. 
 	sysAreaToBeAllocated =[]
 	# iterate over the system files. 
-	for cursysfeat in syspriority:
-		print "Preparing Input Features.."
+	print "Preparing Input Features.."
+	for cursysfeat in tqdm(syspriority):
+		
 		filename = os.path.join(curPath, cursysfeat['featuresfilename'])
 		with open(filename) as data_file:
 			try: 
@@ -238,8 +238,9 @@ if __name__ == "__main__":
 	colorPrefs = ('green3','green2', 'green') # there is no preference for reds
 	# a counter for systems. 
 	syscounter = 0
-	# iterate over the features which are sorted by priority. 
-	for curSysAreaToBeAllocated in sysAreaToBeAllocated:
+	# iterate over the features which are sorted by priority.
+	print "Starting Allocations..." 
+	for curSysAreaToBeAllocated in tqdm(sysAreaToBeAllocated):
 		print "Allocating for " + curSysAreaToBeAllocated['name']
 		alreadyAllocatedFeats = [] # a object to hold already allocated features for this system.
 		sysid = curSysAreaToBeAllocated['system'] # the id of the current system
@@ -258,7 +259,6 @@ if __name__ == "__main__":
 					iFeats = [n for n in curEFeatRtree.intersection(bnds)] # check how many eval features intersect with the input
 					if iFeats and curSysAreaToBeAllocated['type'] == 'random': # once the evaluation features are selected, shuffle them so that the allocaiton can be random.
 						random.shuffle(iFeats)
-
 
 					for curiFeat in iFeats: # iterate over the evaluation features. 
 						if totalIntersectedArea < curSysAreaToBeAllocated['targetarea']: # if the area of intersectio is less then the target area. 
