@@ -126,6 +126,28 @@ if __name__ == "__main__":
 	units = config.units
 	# Set up the API Client
 	myAPIHelper = GeodesignHub.GeodesignHubClient(url = config.apisettings['serviceurl'], project_id=config.apisettings['projectid'], token=config.apisettings['apitoken'])
+	# Download the features file from the given synthesis ID 
+	syspriority = config.featurefilesandpriority
+	cteamid = config.changeteamandsynthesis['changeteamid']
+	synthesisid = config.changeteamandsynthesis['synthesisid']
+	
+	synthesischeck = myAPIHelper.get_synthesis(teamid = cteamid, synthesisid = synthesisid)
+	c = synthesischeck.json()
+	assert c['status'] != "API Endpoint not found.", "Invalid change team or synthesis id."
+	for sp in syspriority:
+		cursysid = sp['systemid']
+		fname = sp['name']
+		# get the projects for this system from the synthesis ID.
+		projectsdata = myAPIHelper.get_synthesis_system_projects(teamid =cteamid , sysid =cursysid, synthesisid = synthesisid)
+		constraintsdata = myAPIHelper.get_constraints()
+		# write the file
+		featfilename = fname +'.geojson'
+		fpath = os.path.join(curPath,'inputs', fname +'.geojson')
+		f = open(fname, 'r')
+		f.write(projectsdata)
+		f.close()
+		syspriority['featuresfilename'] = featfilename
+	
 	# Create instances of our helper classes
 	myShapesHelper = ShapesFactory()
 	myRTreeHelper = RTreeHelper()
@@ -184,11 +206,10 @@ if __name__ == "__main__":
 		print "Processed {0} green3, {1} green2, {2} green from {3} system.".format(len(evalfeatcollection['green3']), len(evalfeatcollection['green2']),len(evalfeatcollection['green']),cureval['name'])
 
 		# Once all the evaluation features are processed, then insert it into the sorted features list including the rtree index. 
-		allEvalSortedFeatures.append({'rtree':evalfeatRtree,'system':cureval['system'],'priority':cureval['priority'], 'features':evalfeatcollection})
+		allEvalSortedFeatures.append({'rtree':evalfeatRtree,'system':cureval['systemid'],'priority':cureval['priority'], 'features':evalfeatcollection})
 		# Proceed to the next evaluation file.
 
 	# now all evaluations are in place, read the feature inputs
-	syspriority = config.featurefilesandpriority
 	# sort the dictionary so we read the most important first.
 	syspriority = sorted(syspriority, key=itemgetter('priority'), reverse=True)
 	# a list to hold the processed features and their details. 

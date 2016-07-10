@@ -65,20 +65,36 @@ class GeodesignHubClient():
 
 	def get_changeteam(self, teamid):
 		''' Return all the synthesis in the change team.  '''
-		assert type(teamid) is int, "team id is not a integer: %r" % teamid
+		assert type(teamid) is int, "Team id is not a integer: %r" % teamid
 		securl = self.securl+ 'projects'+ '/' + self.projectid + '/' +'cteams' + '/'+ str(teamid) +'/'
 		headers = {'Authorization': 'Token '+ self.token}
 		r = requests.get(securl, headers=headers)
 		return r
+		
+	def get_synthesis(self, teamid, synthesisid):
+		assert type(teamid) is int, "Team id is not a integer: %r" % teamid
+		securl = self.securl + 'projects'+ '/' + self.projectid + '/cteams/'+ str(teamid) +'/' + str(synthesisid) + '/systems/'
+		headers = {'Authorization': 'Token '+ self.token}
+		r = requests.get(securl, headers=headers)
+		return r
+
 	def get_changeteam_members(self, teamid):
 		''' Return all the change teams for that project. '''
-		assert type(teamid) is int, "team id is not a integer: %r" % teamid
+		assert type(teamid) is int, "Team id is not a integer: %r" % teamid
 		securl = self.securl+ 'projects'+ '/' + self.projectid + '/' +'cteams' + '/'+ str(teamid) +'/' +'members' + '/'
 		headers = {'Authorization': 'Token '+ self.token}
 		r = requests.get(securl, headers=headers)
 		return r
 
-	def post_as_diagram(self,geoms, projectorpolicy, featuretype, description, sysid ):
+	def get_synthesis_system_projects(self, sysid, teamid, synthesisid):
+		assert type(teamid) is int, "Team id is not a integer: %r" % teamid
+		assert type(sysid) is int ,"System id is not a integer %r" % sysid
+		securl = self.securl + 'projects'+ '/' + self.projectid + '/cteams/'+ str(teamid) +'/' + str(synthesisid) + '/systems/' +sysid + '/projects/json/'
+		headers = {'Authorization': 'Token '+ self.token}
+		r = requests.get(securl, headers=headers)
+		return r
+
+	def post_as_diagram(self, geoms, projectorpolicy, featuretype, description, sysid ):
 		''' Create a requests object with correct headers and creds. '''
 		securl = self.securl+ 'projects'+ '/' + self.projectid + '/' +'systems'+'/'+ str(sysid) + '/'+ 'add' +'/' + projectorpolicy +'/'
 		headers = {'Authorization': 'Token '+ self.token, 'content-type': 'application/json'}
