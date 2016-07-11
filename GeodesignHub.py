@@ -89,7 +89,7 @@ class GeodesignHubClient():
 	def get_synthesis_system_projects(self, sysid, teamid, synthesisid):
 		assert type(teamid) is int, "Team id is not a integer: %r" % teamid
 		assert type(sysid) is int ,"System id is not a integer %r" % sysid
-		securl = self.securl + 'projects'+ '/' + self.projectid + '/cteams/'+ str(teamid) +'/' + str(synthesisid) + '/systems/' +sysid + '/projects/json/'
+		securl = self.securl + 'projects'+ '/' + self.projectid + '/cteams/'+ str(teamid) +'/' + str(synthesisid) + '/systems/' + str(sysid) + '/projects/json/'
 		headers = {'Authorization': 'Token '+ self.token}
 		r = requests.get(securl, headers=headers)
 		return r
@@ -130,11 +130,9 @@ class GeodesignHubClient():
 
 	def post_as_impact_JSON(self, geoms, sysid, username=None):
 		''' Create a requests object with correct headers and creds. '''
-
 		securl = self.securl+ 'projects'+ '/' + self.projectid + '/' +'systems'+'/'+ str(sysid) + '/i/map/json/'
 		if username:
 			securl += username +'/'
-
 		headers = {'Authorization': 'Token '+ self.token, 'content-type': 'application/json'}
 		r = requests.post(securl, headers= headers, data = json.dumps(geoms))
 		return r
@@ -145,7 +143,6 @@ class GeodesignHubClient():
 		if username:
 			securl += username +'/'
 		headers = {'Authorization': 'Token '+ self.token}
-
 		r = requests.post(securl, headers= headers, files = {'geoms.gbf':geoms})
 		return r
 
@@ -160,7 +157,6 @@ class GeodesignHubClient():
 
 	def post_as_impact_GBF(self, geoms, sysid, username=None):
 		''' Create a requests object with correct headers and creds. '''
-
 		securl = self.securl+ 'projects'+ '/' + self.projectid + '/' +'systems'+'/'+ str(sysid) + '/i/map/gbf/'
 		if username:
 			securl += username +'/'

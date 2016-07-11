@@ -1,16 +1,16 @@
 apisettings = {
   "serviceurl": "http://local.dev:8000/api/v1/",
-  "projectid": "91cb24d7cd1feb2b",
-  "apitoken": "55006fd988b3fd3235096b5bac079207b5c38aed",
+  "projectid": "23f85c2a201b8cfb",
+  "apitoken": "bf6568eeebe620616f715753b4a70bd90b07d940",
   "username": "ufeusr1",
 }
 changeteamandsynthesis = {
 	"changeteamid":1,
-	"synthesisid":"afea"
+	"synthesisid":"0JG9B4J0OEOBEM38"
 }
 # linktype has to be evaluations, impacts or diagrams
 evalsandpriority = [
-	{"priority":1, "evalfilename": "input-evaluations/commind-final.geojson", "systemid":1, "name":"Industry"},
+	{"priority":1, "evalfilename": "input-evaluations/commind-final.geojson", "systemid":35, "name":"Industry"},
 	{"priority":2, "evalfilename": "input-evaluations/housing-final.geojson", "systemid":2, "name":"Housing"},
 	{"priority":3, "evalfilename": "input-evaluations/ldhousing-final.geojson", "systemid":3,"name":"Low Density Housing"}
 	]

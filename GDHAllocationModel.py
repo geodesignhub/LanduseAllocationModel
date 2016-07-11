@@ -116,13 +116,12 @@ class RTreeHelper():
 
 		return (mins['minx'], mins['miny'], maxs['maxx'], maxs['maxy'])
 
-
 # Set the current path so that the evaluation and feature folders can be reads.
 curPath = os.path.dirname(os.path.abspath(__file__))
 
-
 if __name__ == "__main__":
 	# Read and set the units. 
+	print "Starting Allocation Model.."
 	units = config.units
 	# Set up the API Client
 	myAPIHelper = GeodesignHub.GeodesignHubClient(url = config.apisettings['serviceurl'], project_id=config.apisettings['projectid'], token=config.apisettings['apitoken'])
@@ -130,10 +129,16 @@ if __name__ == "__main__":
 	syspriority = config.featurefilesandpriority
 	cteamid = config.changeteamandsynthesis['changeteamid']
 	synthesisid = config.changeteamandsynthesis['synthesisid']
-	
 	synthesischeck = myAPIHelper.get_synthesis(teamid = cteamid, synthesisid = synthesisid)
 	c = synthesischeck.json()
-	assert c['status'] != "API Endpoint not found.", "Invalid change team or synthesis id."
+	print "Downloading project features from the synthesis..."
+	try:
+		assert c['status'] != "API Endpoint not found." 
+	except AssertionError as e: 
+		print "Invalid change team or synthesis id."
+	inputdirectory = os.path.join(curPath,'input-features')
+	if not os.path.exists(inputdirectory):
+		os.makedirs(inputdirectory)
 	for sp in syspriority:
 		cursysid = sp['systemid']
 		fname = sp['name']
@@ -142,12 +147,12 @@ if __name__ == "__main__":
 		constraintsdata = myAPIHelper.get_constraints()
 		# write the file
 		featfilename = fname +'.geojson'
-		fpath = os.path.join(curPath,'inputs', fname +'.geojson')
-		f = open(fname, 'r')
-		f.write(projectsdata)
+		fpath = os.path.join(curPath,'input-features', fname +'.geojson')
+		f = open(fpath, 'w')
+		f.write(projectsdata.text)
 		f.close()
-		syspriority['featuresfilename'] = featfilename
-	
+		sp['featuresfilename'] = featfilename
+	print "Features downloaded in the input-features directory.."
 	# Create instances of our helper classes
 	myShapesHelper = ShapesFactory()
 	myRTreeHelper = RTreeHelper()
@@ -156,7 +161,6 @@ if __name__ == "__main__":
 	# a ordered list to store the shapes per areatype and system. # TODO: User a OrderedDict 
 	allEvalSortedFeatures = []
 	# iterate over the evaluations
-	print "Starting Allocation Model.."
 	# iterate over the evaluations
 	print "Preparing Evaluations.."
 	for cureval in tqdm(evalspriority):
@@ -184,7 +188,6 @@ if __name__ == "__main__":
 				# if there is a error in conversion go to the next shape. 
 				print explain_validity(shp)
 				pass
-
 			try:
 				assert shp != 0
 				# get the bounds of the shape
@@ -229,9 +232,9 @@ if __name__ == "__main__":
 		allFeatShapes = []
 		# iterate over the read features
 		for curFeature in geoms['features']:
-			shp=0
+			shp = 0
 			# set the default shape area to be 0
-			totalarea=0
+			totalarea = 0
 			try:
 				# Convert the feature into a shape. 
 				shp = asShape(curFeature['geometry'])
@@ -239,7 +242,6 @@ if __name__ == "__main__":
 				#if there is a error in converting to shape, describe the error. 
 				print explain_validity(shp)
 				pass
-
 			try:
 				assert shp != 0
 				# add the shape to our features list
@@ -355,7 +357,6 @@ if __name__ == "__main__":
 			# cf['properties']['allocated'] = 1
 			newGeoms.append(cf)
 
-
 		syscounter+= 1
 		transformedGeoms = {}
 		transformedGeoms['type'] = 'FeatureCollection'
@@ -363,7 +364,7 @@ if __name__ == "__main__":
 		
 		outputdirectory = os.path.join(curPath,'output')
 		if not os.path.exists(outputdirectory):
-			os.mkdirs(outputdirectory)
+			os.makedirs(outputdirectory)
 		oppath =  os.path.join(curPath, 'output',str(curSysAreaToBeAllocated['name'])+'-op.geojson')
 		with open(oppath, 'w') as outFile:
 			json.dump(transformedGeoms , outFile)
