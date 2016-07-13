@@ -12,7 +12,7 @@ from tqdm import tqdm
 from shapely.ops import unary_union
 from shapely import speedups
 if speedups.available:
-        speedups.enable()
+	speedups.enable()
 '''
 Geodesign Hub Compatible Land Use Allocation Model
 
