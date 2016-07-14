@@ -11,6 +11,8 @@ from shapely.validation import explain_validity
 from tqdm import tqdm
 from shapely.ops import unary_union
 from shapely import speedups
+from sys import version_info
+
 if speedups.available:
 	speedups.enable()
 '''
@@ -26,6 +28,40 @@ GeodesignHub.py : This is the Geodesign Hub client written in Python, it is usef
 shapelyHelper.py: This file is a helper class for Shapely (https://pypi.python.org/pypi/Shapely) the Python library used for spatial analysis. 
 '''
 
+import sys
+
+def query_yes_no(question, default="yes"):
+    """Ask a yes/no question via raw_input() and return their answer.
+
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+        It must be "yes" (the default), "no" or None (meaning
+        an answer is required of the user).
+
+    The "answer" return value is True for "yes" or False for "no".
+	Source : http://stackoverflow.com/questions/3041986/apt-command-line-interface-like-yes-no-input 
+    """
+    valid = {"yes": True, "y": True, "ye": True,
+             "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = raw_input().lower()
+        if default is not None and choice == '':
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "
+                             "(or 'y' or 'n').\n")
 class ShapesFactory():
 	''' A class to help in geometry operations '''
 	def multiPolytoFeature(self, mp):
@@ -120,13 +156,14 @@ class RTreeHelper():
 curPath = os.path.dirname(os.path.abspath(__file__))
 
 if __name__ == "__main__":
+
 	# Read and set the units. 
 	print "Starting Allocation Model.."
 	units = config.units
 	# Set up the API Client
 	myAPIHelper = GeodesignHub.GeodesignHubClient(url = config.apisettings['serviceurl'], project_id=config.apisettings['projectid'], token=config.apisettings['apitoken'])
 	# Download the features file from the given synthesis ID 
-	syspriority = config.featurefilesandpriority
+	evalspriority = config.evalsandpriority
 	cteamid = config.changeteamandsynthesis['changeteamid']
 	synthesisid = config.changeteamandsynthesis['synthesisid']
 	synthesischeck = myAPIHelper.get_synthesis(teamid = cteamid, synthesisid = synthesisid)
@@ -139,12 +176,11 @@ if __name__ == "__main__":
 	inputdirectory = os.path.join(curPath,'input-features')
 	if not os.path.exists(inputdirectory):
 		os.makedirs(inputdirectory)
-	for sp in syspriority:
+	for sp in evalspriority:
 		cursysid = sp['systemid']
 		fname = sp['name']
 		# get the projects for this system from the synthesis ID.
 		projectsdata = myAPIHelper.get_synthesis_system_projects(teamid =cteamid , sysid =cursysid, synthesisid = synthesisid)
-		constraintsdata = myAPIHelper.get_constraints()
 		# write the file
 		featfilename = fname +'.geojson'
 		fpath = os.path.join(curPath,'input-features', fname +'.geojson')
@@ -163,6 +199,7 @@ if __name__ == "__main__":
 	# iterate over the evaluations
 	# iterate over the evaluations
 	print "Preparing Evaluations.."
+	opfiles = []
 	for cureval in tqdm(evalspriority):
 		# a dictionary to hold features, we will ignore the red and red2 since allocation should not happen here. 
 		evalfeatcollection = {'green3':[],'green2':[], 'green':[]}
@@ -368,5 +405,19 @@ if __name__ == "__main__":
 		oppath =  os.path.join(curPath, 'output',str(curSysAreaToBeAllocated['name'])+'-op.geojson')
 		with open(oppath, 'w') as outFile:
 			json.dump(transformedGeoms , outFile)
-
+		opfiles.append({'allocationfile':oppath,'sysname':curSysAreaTsysid':curSysAreaToBeAllocated['systemid'])
 	print "Finished Allocations"
+	
+	uploadOK = query_yes_no("Upload allocation outputs to the Project?")
+	if uploadOK: 
+		# read the allocated file
+		for curopfile in opfiles:
+			with open(curopfile, 'r') as f:
+				# set the system number 
+				allocatedFeats = f.read()
+				
+			allocatedFeats = json.loads(allocatedFeats)
+			print "Uploading allocations as diagrams.."
+			uploadfilename = curSysAreaToBeAllocated['name'] +' v'+ config.allocationrunnumber
+			upload = myAPIHelper.post_as_diagram(geoms = allocatedFeats, projectorpolicy= 'project',featuretype = 'polygon', description=uploadfilename, sysid = curopfile['sysid'] )
+			print upload.text
