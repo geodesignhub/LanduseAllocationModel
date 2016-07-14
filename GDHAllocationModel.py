@@ -165,8 +165,13 @@ if __name__ == "__main__":
 	# Download the features file from the given synthesis ID 
 	evalspriority = config.evalsandpriority
 	cteamid = config.changeteamandsynthesis['changeteamid']
+	
 	synthesisid = config.changeteamandsynthesis['synthesisid']
-	synthesischeck = myAPIHelper.get_synthesis(teamid = cteamid, synthesisid = synthesisid)
+	try:
+		synthesischeck = myAPIHelper.get_synthesis(teamid = cteamid, synthesisid = synthesisid)
+	except requests.ConnectionError:
+		print "Could not connect to Geodesign Hub API service."
+		sys.exit(0)
 	c = synthesischeck.json()
 	print "Downloading project features from the synthesis..."
 	try:
@@ -180,7 +185,11 @@ if __name__ == "__main__":
 		cursysid = sp['systemid']
 		fname = sp['name']
 		# get the projects for this system from the synthesis ID.
-		projectsdata = myAPIHelper.get_synthesis_system_projects(teamid =cteamid , sysid =cursysid, synthesisid = synthesisid)
+		try:
+			projectsdata = myAPIHelper.get_synthesis_system_projects(teamid =cteamid , sysid =cursysid, synthesisid = synthesisid)
+		except requests.ConnectionError:
+			print "Could not connect to Geodesign Hub API service."
+			sys.exit(0)
 		# write the file
 		featfilename = fname +'.geojson'
 		fpath = os.path.join(curPath,'input-features', fname +'.geojson')
@@ -405,7 +414,7 @@ if __name__ == "__main__":
 		oppath =  os.path.join(curPath, 'output',str(curSysAreaToBeAllocated['name'])+'-op.geojson')
 		with open(oppath, 'w') as outFile:
 			json.dump(transformedGeoms , outFile)
-		opfiles.append({'allocationfile':oppath,'sysname':curSysAreaTsysid':curSysAreaToBeAllocated['systemid'])
+		opfiles.append({'allocationfile':oppath,'sysname':curSysAreaToBeAllocated['name'],'sysid':curSysAreaToBeAllocated['systemid']})
 	print "Finished Allocations"
 	
 	uploadOK = query_yes_no("Upload allocation outputs to the Project?")

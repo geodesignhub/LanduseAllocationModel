@@ -13,7 +13,7 @@ changeteamandsynthesis = {
 # enter the details of the gridded evaluation files and the correct system ID and priority.
 evalsandpriority = [
 	{"target": 10000,"priority":1, "evalfilename": "input-evaluations/commind-final.geojson", "systemid":35, "name":"Industry","allocationtype":"cluster"},
-	{"target":7000,"priority":2, "evalfilename": "input-evaluations/housing-final.geojson", "systemid":2, "name":"Housing""allocationtype":"cluster"},
+	{"target":7000,"priority":2, "evalfilename": "input-evaluations/housing-final.geojson", "systemid":2, "name":"Housing","allocationtype":"cluster"},
 	{ "target":10000,"priority":3, "evalfilename": "input-evaluations/ldhousing-final.geojson", "systemid":3,"name":"Low Density Housing", "allocationtype":"random"}
 	]
 
