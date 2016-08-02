@@ -12,6 +12,7 @@ from tqdm import tqdm
 from shapely.ops import unary_union
 from shapely import speedups
 from sys import version_info
+from termcolor import colored
 
 if speedups.available:
 	speedups.enable()
@@ -161,9 +162,8 @@ def iter_evals(evalfeats):
 		yield x
 
 if __name__ == "__main__":
-
 	# Read and set the units. 
-	print "Starting Allocation Model.."
+	print colored("Starting Allocation Model..","white")
 	units = config.units
 	# Set up the API Client
 	myAPIHelper = GeodesignHub.GeodesignHubClient(url = config.apisettings['serviceurl'], project_id=config.apisettings['projectid'], token=config.apisettings['apitoken'])
@@ -175,17 +175,18 @@ if __name__ == "__main__":
 	try:
 		synthesischeck = myAPIHelper.get_synthesis(teamid = cteamid, synthesisid = synthesisid)
 	except requests.ConnectionError:
-		print "Could not connect to Geodesign Hub API service."
+		print colored("Could not connect to Geodesign Hub API service.","red")
 		sys.exit(0)
 	c = synthesischeck.json()
-	print c
-	print "Downloading project features from the synthesis..."
+	
+	print colored("Downloading project features from the synthesis...","yellow")
 	try:
 		assert c['status'] != "API Endpoint not found." 
 	except AssertionError as e: 
-		print "Invalid change team or synthesis id."
+		print colored("Invalid change team or synthesis id.", "red")
 	except KeyError as e1: 
-		print "Features downloaded, saving.. "
+		# print colored("Features downloaded, saving.. ","yellow")
+		pass
 	inputdirectory = os.path.join(curPath,'input-features')
 	if not os.path.exists(inputdirectory):
 		os.makedirs(inputdirectory)
@@ -196,7 +197,7 @@ if __name__ == "__main__":
 		try:
 			projectsdata = myAPIHelper.get_synthesis_system_projects(teamid =cteamid , sysid =cursysid, synthesisid = synthesisid)
 		except requests.ConnectionError:
-			print "Could not connect to Geodesign Hub API service."
+			print colored("Could not connect to Geodesign Hub API service.", "red")
 			sys.exit(0)
 		# write the file
 		featfilename = fname +'.geojson'
@@ -204,8 +205,9 @@ if __name__ == "__main__":
 		f = open(fpath, 'w')
 		f.write(projectsdata.text)
 		f.close()
-		sp['featuresfilename'] = featfilename
-	print "Features downloaded in the input-features directory.."
+		sp['featuresfilename'] = fpath # not necessary
+	
+	print colored("Features downloaded in the input-features directory..", "green")
 	# Create instances of our helper classes
 	myShapesHelper = ShapesFactory()
 	myRTreeHelper = RTreeHelper()
@@ -215,24 +217,27 @@ if __name__ == "__main__":
 	allEvalSortedFeatures = []
 	# iterate over the evaluations
 	# iterate over the evaluations
-	print "Preparing Evaluations.."
-<<<<<<< HEAD
-	for cureval in evalspriority:
-=======
 	opfiles = []
-	for cureval in tqdm(evalspriority):
->>>>>>> origin/master
+
+	for cureval in evalspriority:
+		print colored("Loading Evaluation data for %s system.." % cureval["name"], "yellow")
+	
 		# a dictionary to hold features, we will ignore the red and red2 since allocation should not happen here. 
 		evalfeatcollection = {'green3':[],'green2':[], 'green':[]}
 		# A dictionary to store the index of the features. 
 		evalfeatRtree = {'green3':Rtree(),'green2': Rtree(), 'green': Rtree()}
 		# open evaluation file
 		filename = os.path.join(curPath, cureval['evalfilename'])
+		try:
+			assert os.path.isfile(filename)
+		except AssertionError as e: 
+			print colored("Input file %s does not exist" % filename, "red")
+			sys.exit(0)
 		with open(filename) as data_file:
 			try:
 				geoms = json.load(data_file)
 			except Exception as e: 
-				print "Error in loading evaluation geometries, please check if it is a valid JSON."
+				print colored("Error in loading evaluation geometries, please check if it is a valid JSON.", "red")
 				sys.exit(0)
 
 		allf = iter_evals(geoms['features'])
@@ -265,7 +270,7 @@ if __name__ == "__main__":
 			except AssertionError as e:
 				pass
 
-		print "Processed {0} green3, {1} green2, {2} green from {3} system.".format(len(evalfeatcollection['green3']), len(evalfeatcollection['green2']),len(evalfeatcollection['green']),cureval['name'])
+		print colored("Processed {0} green3, {1} green2, {2} green from {3} system.".format(len(evalfeatcollection['green3']), len(evalfeatcollection['green2']),len(evalfeatcollection['green']),cureval['name']),"green")
 
 		# Once all the evaluation features are processed, then insert it into the sorted features list including the rtree index. 
 		allEvalSortedFeatures.append({'rtree':evalfeatRtree,'systemid':cureval['systemid'],'priority':cureval['priority'], 'features':evalfeatcollection})
@@ -273,6 +278,7 @@ if __name__ == "__main__":
 	
 
 	# now all evaluations are in place, read the feature inputs
+	syspriority = config.featurefilesandpriority
 	# sort the dictionary so we read the most important first.
 	syspriority = sorted(syspriority, key=itemgetter('priority'), reverse=True)
 	# a list to hold the processed features and their details. 
@@ -281,12 +287,12 @@ if __name__ == "__main__":
 	print "Preparing Input Features.."
 	for cursysfeat in syspriority:
 		
-		filename = os.path.join(curPath, 'input-features', cursysfeat['featuresfilename'])
+		filename = os.path.join(curPath, 'input-features', cursysfeat['name']+'.geojson')
 		with open(filename) as data_file:
 			try: 
 			    geoms = json.load(data_file)
 			except Exception as e: 
-				print "Invalid geometries in the file, please check that it is valid JSON."
+				print colored("Invalid geometries in the file, please check that it is valid JSON.", "red")
 				sys.exit(0)
 		# a list to hold all shapes in this feature file
 		allFeatShapes = []
@@ -314,7 +320,7 @@ if __name__ == "__main__":
 		
 		allShapes = [myShapesHelper.createUnaryUnion(allFeatShapes)]
 
-		print "Processed {0} features from {1} system.".format(len(allFeatShapes),cursysfeat['name'])
+		print colored("Processed {0} features from {1} system.".format(len(allFeatShapes),cursysfeat['name']), "green")
 		sysAreaToBeAllocated.append({'name':cursysfeat['name'],'systemid':cursysfeat['systemid'], 'priority':cursysfeat['priority'], 'type':cursysfeat['allocationtype'], 'targetarea':cursysfeat['target'], 'shapes':allShapes,'totalarea':totalarea, 'alreadyallocated': Rtree()})
 
 	# All data has now been setup, we start the allocaiton process. 
@@ -406,7 +412,7 @@ if __name__ == "__main__":
 				evalfeatures['features'][curAllocationColor] = [x for x in evalfeatures['features'][curAllocationColor] if x['id'] != curmodifiedFeat['id']]
 				evalfeatures['features'][curAllocationColor].append(curmodifiedFeat)
 
-		print "Allocated " + str(totalIntersectedArea) + " " + units
+		print colored("Allocated " + str(totalIntersectedArea) + " " + units, "green")
 		print "Writing Output file.."
 		newGeoms = []
 		for curAllocation in alreadyAllocatedFeats:
@@ -430,18 +436,18 @@ if __name__ == "__main__":
 		with open(oppath, 'w') as outFile:
 			json.dump(transformedGeoms , outFile)
 		opfiles.append({'allocationfile':oppath,'sysname':curSysAreaToBeAllocated['name'],'sysid':curSysAreaToBeAllocated['systemid']})
-	print "Finished Allocations"
+	print colored("Finished Allocations", "green")
 	
 	uploadOK = query_yes_no("Upload allocation outputs to the Project?")
 	if uploadOK: 
 		# read the allocated file
 		for curopfile in opfiles:
-			with open(curopfile, 'r') as f:
+			with open(curopfile['allocationfile'], 'r') as f:
 				# set the system number 
 				allocatedFeats = f.read()
 				
 			allocatedFeats = json.loads(allocatedFeats)
 			print "Uploading allocations as diagrams.."
-			uploadfilename = curSysAreaToBeAllocated['name'] +' v'+ config.allocationrunnumber
+			uploadfilename = curSysAreaToBeAllocated['name'] +' v'+ str(config.allocationrunnumber)
 			upload = myAPIHelper.post_as_diagram(geoms = allocatedFeats, projectorpolicy= 'project',featuretype = 'polygon', description=uploadfilename, sysid = curopfile['sysid'] )
 			print upload.text
