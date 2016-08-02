@@ -119,6 +119,11 @@ class RTreeHelper():
 # Set the current path so that the evaluation and feature folders can be reads.
 curPath = os.path.dirname(os.path.abspath(__file__))
 
+def iter_evals(evalfeats):
+	''' This function returns a generator for evaluation features '''
+	for x in tqdm(evalfeats):
+		yield x
+
 if __name__ == "__main__":
 	# Read and set the units. 
 	print "Starting Allocation Model.."
@@ -131,11 +136,14 @@ if __name__ == "__main__":
 	synthesisid = config.changeteamandsynthesis['synthesisid']
 	synthesischeck = myAPIHelper.get_synthesis(teamid = cteamid, synthesisid = synthesisid)
 	c = synthesischeck.json()
+	print c
 	print "Downloading project features from the synthesis..."
 	try:
 		assert c['status'] != "API Endpoint not found." 
 	except AssertionError as e: 
 		print "Invalid change team or synthesis id."
+	except KeyError as e1: 
+		print "Features downloaded, saving.. "
 	inputdirectory = os.path.join(curPath,'input-features')
 	if not os.path.exists(inputdirectory):
 		os.makedirs(inputdirectory)
@@ -163,7 +171,7 @@ if __name__ == "__main__":
 	# iterate over the evaluations
 	# iterate over the evaluations
 	print "Preparing Evaluations.."
-	for cureval in tqdm(evalspriority):
+	for cureval in evalspriority:
 		# a dictionary to hold features, we will ignore the red and red2 since allocation should not happen here. 
 		evalfeatcollection = {'green3':[],'green2':[], 'green':[]}
 		# A dictionary to store the index of the features. 
@@ -177,8 +185,9 @@ if __name__ == "__main__":
 				print "Error in loading evaluation geometries, please check if it is a valid JSON."
 				sys.exit(0)
 
+		allf = iter_evals(geoms['features'])
 		# iterate over the geometry features.
-		for curFeature in geoms['features']:
+		for curFeature in allf:
 			shp = 0
 			featureArea=0
 			try:
@@ -209,8 +218,9 @@ if __name__ == "__main__":
 		print "Processed {0} green3, {1} green2, {2} green from {3} system.".format(len(evalfeatcollection['green3']), len(evalfeatcollection['green2']),len(evalfeatcollection['green']),cureval['name'])
 
 		# Once all the evaluation features are processed, then insert it into the sorted features list including the rtree index. 
-		allEvalSortedFeatures.append({'rtree':evalfeatRtree,'system':cureval['systemid'],'priority':cureval['priority'], 'features':evalfeatcollection})
+		allEvalSortedFeatures.append({'rtree':evalfeatRtree,'systemid':cureval['systemid'],'priority':cureval['priority'], 'features':evalfeatcollection})
 		# Proceed to the next evaluation file.
+	
 
 	# now all evaluations are in place, read the feature inputs
 	# sort the dictionary so we read the most important first.
@@ -219,9 +229,9 @@ if __name__ == "__main__":
 	sysAreaToBeAllocated =[]
 	# iterate over the system files. 
 	print "Preparing Input Features.."
-	for cursysfeat in tqdm(syspriority):
+	for cursysfeat in syspriority:
 		
-		filename = os.path.join(curPath, cursysfeat['featuresfilename'])
+		filename = os.path.join(curPath, 'input-features', cursysfeat['featuresfilename'])
 		with open(filename) as data_file:
 			try: 
 			    geoms = json.load(data_file)
@@ -230,11 +240,12 @@ if __name__ == "__main__":
 				sys.exit(0)
 		# a list to hold all shapes in this feature file
 		allFeatShapes = []
-		# iterate over the read features
+		# iterate over the read featur
+		totalarea = 0
 		for curFeature in geoms['features']:
 			shp = 0
 			# set the default shape area to be 0
-			totalarea = 0
+			
 			try:
 				# Convert the feature into a shape. 
 				shp = asShape(curFeature['geometry'])
@@ -247,14 +258,14 @@ if __name__ == "__main__":
 				# add the shape to our features list
 				allFeatShapes.append(shp)
 				totalarea += myShapesHelper.generateShapeArea(curFeature, units)
-
 			except AssertionError as e:
 				pass
 		# if allFeatShapes and cursysfeat['allocationtype'] =='random':
+		
 		allShapes = [myShapesHelper.createUnaryUnion(allFeatShapes)]
 
 		print "Processed {0} features from {1} system.".format(len(allFeatShapes),cursysfeat['name'])
-		sysAreaToBeAllocated.append({'name':cursysfeat['name'],'system':cursysfeat['system'], 'priority':cursysfeat['priority'], 'type':cursysfeat['allocationtype'], 'targetarea':cursysfeat['target'], 'shapes':allShapes,'totalarea':totalarea, 'alreadyallocated': Rtree()})
+		sysAreaToBeAllocated.append({'name':cursysfeat['name'],'systemid':cursysfeat['systemid'], 'priority':cursysfeat['priority'], 'type':cursysfeat['allocationtype'], 'targetarea':cursysfeat['target'], 'shapes':allShapes,'totalarea':totalarea, 'alreadyallocated': Rtree()})
 
 	# All data has now been setup, we start the allocaiton process. 
 	sysAreaToBeAllocated = sorted(sysAreaToBeAllocated, key=itemgetter('priority'))
@@ -263,11 +274,11 @@ if __name__ == "__main__":
 	syscounter = 0
 	# iterate over the features which are sorted by priority.
 	print "Starting Allocations..." 
-	for curSysAreaToBeAllocated in tqdm(sysAreaToBeAllocated):
+	for curSysAreaToBeAllocated in sysAreaToBeAllocated:
 		print "Allocating for " + curSysAreaToBeAllocated['name']
 		alreadyAllocatedFeats = [] # a object to hold already allocated features for this system.
-		sysid = curSysAreaToBeAllocated['system'] # the id of the current system
-		evalfeatures = (item for item in allEvalSortedFeatures if item["system"] == sysid).next() # get the evaluation feature object.
+		sysid = curSysAreaToBeAllocated['systemid'] # the id of the current system
+		evalfeatures = (item for item in allEvalSortedFeatures if item["systemid"] == sysid).next() # get the evaluation feature object.
 		totalIntersectedArea = 0 # variable to hold the intersected area.
 		curSysPriority = curSysAreaToBeAllocated['priority']
 		curSysName = curSysAreaToBeAllocated['name']
