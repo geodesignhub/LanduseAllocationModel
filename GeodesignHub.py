@@ -97,7 +97,6 @@ class GeodesignHubClient():
 	def post_as_diagram(self, geoms, projectorpolicy, featuretype, description, sysid ):
 		''' Create a requests object with correct headers and creds. '''
 		securl = self.securl+ 'projects'+ '/' + self.projectid + '/' +'systems'+'/'+ str(sysid) + '/'+ 'add' +'/' + projectorpolicy +'/'
-		print securl
 		headers = {'Authorization': 'Token '+ self.token, 'content-type': 'application/json'}
 		postdata = {'geometry':geoms, 'description':description, 'featuretype':featuretype}
 		r = requests.post(securl, headers= headers, data = json.dumps(postdata))

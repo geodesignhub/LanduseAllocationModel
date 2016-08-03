@@ -448,6 +448,6 @@ if __name__ == "__main__":
 				
 			allocatedFeats = json.loads(allocatedFeats)
 			print "Uploading allocations as diagrams.."
-			uploadfilename = curSysAreaToBeAllocated['name'] +' v'+ str(config.allocationrunnumber)
+			uploadfilename = 'Allocated '+ curSysAreaToBeAllocated['name'] + ' v '+ str(config.allocationrunnumber)
 			upload = myAPIHelper.post_as_diagram(geoms = allocatedFeats, projectorpolicy= 'project',featuretype = 'polygon', description=uploadfilename, sysid = curopfile['sysid'] )
 			print upload.text
