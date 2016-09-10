@@ -73,7 +73,7 @@ class GeodesignHubClient():
 		
 	def get_synthesis(self, teamid, synthesisid):
 		assert type(teamid) is int, "Team id is not a integer: %r" % teamid
-		securl = self.securl + 'projects'+ '/' + self.projectid + '/cteams/'+ str(teamid) +'/' + str(synthesisid) + '/json/'
+		securl = self.securl + 'projects'+ '/' + self.projectid + '/cteams/'+ str(teamid) +'/' + str(synthesisid) 
 		headers = {'Authorization': 'Token '+ self.token}
 		r = requests.get(securl, headers=headers)
 		return r
@@ -89,7 +89,7 @@ class GeodesignHubClient():
 	def get_synthesis_system_projects(self, sysid, teamid, synthesisid):
 		assert type(teamid) is int, "Team id is not a integer: %r" % teamid
 		assert type(sysid) is int ,"System id is not a integer %r" % sysid
-		securl = self.securl + 'projects'+ '/' + self.projectid + '/cteams/'+ str(teamid) +'/' + str(synthesisid) + '/systems/' + str(sysid) + '/projects/json/'
+		securl = self.securl + 'projects'+ '/' + self.projectid + '/cteams/'+ str(teamid) +'/' + str(synthesisid) + '/systems/' + str(sysid) + '/projects/'
 		headers = {'Authorization': 'Token '+ self.token}
 		r = requests.get(securl, headers=headers)
 		return r
