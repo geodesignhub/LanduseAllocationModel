@@ -1,45 +1,46 @@
-##Geodesign Hub compatible Landuse Allocation Model
+## Geodesignhub compatible Landuse Allocation Model
 A demand-based, evaluation-weighted, geodesign designated land use allocation model
 
-###Overview
-This repository is a simple demand based evaluation weighted land use allocation model. It takes in a gridded evaluation geojson file and features for "urban" type landuses from Geodesign Hub and allocates them based on a priority and also target (in acres or hectares) allocation. 
+### Overview
+This repository is a simple demand based evaluation weighted land use allocation model. It takes in a gridded evaluation geojson file and features for "urban" type landuses from Geodesignhub and allocates them based on a priority and also target (in acres or hectares) allocation. 
 
-####Pseudocode logic
+#### Pseudocode logic
 - Iterate over all features / polygons of a evaluation map
-  - Check if it is Red2, Red, Yellow, Green or Green2 and store it in a rtree
-  - Store the id, polyogn area and color classification of the evaluation layer.
-- Sort the stored ids for each evaluation map grouped by the color
-- Get designed features from Geodesign Hub
-- Start with the first priority evaluation and first priority system.
+  - Check if it is Red, Yellow, Green or Green2 or Green3 and store it in a rtree spatial index. For more information about what these are please refer to [this link](https://community.geodesignhub.com/t/making-evaluation-maps/62).
+  - Store the id, polygon area and areatype classification of the evaluation layer.
+- Sort the stored ids for each evaluation map grouped by the color (for performance)
+- Get designed features from Geodesignhub using the API (synthesis is provided)
+- Start with the first priority evaluation and first priority system. (based on the decision model)
 - Start with Green2 (most feasable) location in the evaluation map. 
 - Intersect the current feature with the evaluation, allocate if intersected
   - If not intersected move to the next designed feature or evaluation feature
-- Contintue to the next most suitable (green) and next most capable (yello) till either there are no more features or target reached. Do not allocate on red or red2 
+- Contintue to the next most suitable (green) and next most capable (yello) till either there are no more features or target reached. Do not allocate on red features.
 
 
 ### Prerequisites
-Install all dependencies on your computer (Rree and Shapely)
+Install all dependencies on your computer (Rree and Shapely) in a Python3 environment
 ```
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 This should install Shapely and RTree and requests and a few other libraries. For Windows users please download binaries of the Shapely and RTree libraries from [here](http://www.lfd.uci.edu/~gohlke/pythonlibs/).
 
-###Usage
+### Usage
 Setup the evaluation maps, edit the config file with your paths, Geodesign Hub API key, project and change team name and inputs and then run the following command:
+
 ```python
 python GDHAllocationModel.py
 ```
 
-###Inputs
+### Inputs
 There is one input for this script both configured through config.py
 - Gridded evaluation files (see below)
-- The script uses the Geodesign Hub [API](http://www.geodesignsupport.com/kb/get-methods/) to download the input features. Please configure the System ID correctly. 
+- The script uses the Geodesignhub [API](http://www.geodesignsupport.com/kb/get-methods/) to download the input features. Please configure the System ID correctly. 
 
-###Outputs
+### Outputs
 In the output directory, the script will produce a allocated output for each of the systems based on the targets setup in the config file. For the moment, you can ignore the allocation type option. The output will be produced in GeoJSON and in EPSG 4326 projection. It can be uploaded back to Geodesign Hub automatically.
 
 #### Creating gridded Evaluation GeoJSON
-For the purposes of allocation the evaluation GeoJSON files built for Geodesign Hub Systems need to be split into a tiny grid. This can be done in a regular GIS software. The grid size should depend on the kind of area that you are studying. Following are the steps: 
+For the purposes of allocation the evaluation GeoJSON files built for Geodesignhub systems need to be split into a tiny grid. This can be done in a regular GIS software. The grid size should depend on the kind of area that you are studying. Following are the steps: 
 
 1. Create a raster of the area from your vector maps, with resolution of 250 m and with all the cells with the same color (grid value);
 2. Convert from raster to points;
