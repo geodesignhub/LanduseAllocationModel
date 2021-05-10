@@ -9,6 +9,7 @@ from operator import itemgetter
 from rtree import Rtree
 from shapely.validation import explain_validity
 from tqdm import tqdm
+from pyproj import Geod
 from shapely.ops import unary_union
 from shapely import speedups
 from sys import version_info
@@ -56,7 +57,7 @@ def query_yes_no(question, default="yes"):
 
     while True:
         sys.stdout.write(question + prompt)
-        choice = raw_input().lower()
+        choice = input().lower()
         if default is not None and choice == '':
             return valid[default]
         elif choice in valid:
@@ -66,6 +67,10 @@ def query_yes_no(question, default="yes"):
                              "(or 'y' or 'n').\n")
 class ShapesFactory():
 	''' A class to help in geometry operations '''
+
+	def __init__(self):
+		self.geod = Geod(ellps="WGS84")
+
 	def multiPolytoFeature(self, mp):
 		''' Given Multipolygons, convert them into single polygon '''
 		feats =[]
@@ -113,21 +118,16 @@ class ShapesFactory():
 		''' Given a feature compute the area in the given units. Acceptable units are acres or hectares. 
 		This function converts the feature in AEA (http://mathworld.wolfram.com/AlbersEqual-AreaConicProjection.html) to approximate
 		the total area. '''
+		
+
 		geom = feature['geometry']
-		if len(geom['coordinates']) > 2:
-		    geom['coordinates'] = geom['coordinates'][:2]
-		lon, lat = zip(*geom['coordinates'][0])
-		from pyproj import Proj
-		pa = Proj("+proj=aea")
-		# alternative WGS 1984
-		# pa = Proj("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-		x, y = pa(lon, lat)
-		geomp = {"type": "Polygon", "coordinates": [zip(x, y)]}
-		s = shape(geomp)
-		featureArea = (s.area)
+		s = shape(geom)
+		featureArea = abs(self.geod.geometry_area_perimeter(s)[0])		
 		# default is hectares, if in acres, convert by using the multiplier. 
-		multiplier = 0.000247105 if units == 'acres' else 0.001
-		fArea = featureArea * multiplier
+		multiplier = 0.000247105 if units == 'acres' else 0.0001
+		fArea = featureArea * multiplier		
+		# print('# Geodesic area: {:.3f} {}'.format(fArea, units))		
+
 		return fArea
 
 class RTreeHelper():
@@ -179,7 +179,11 @@ if __name__ == "__main__":
 	except requests.ConnectionError:
 		print(colored("Could not connect to Geodesignhub API service.","red"))
 		sys.exit(0)
-	c = synthesischeck.json()
+	if synthesischeck.status_code == 200:
+		
+		c = synthesischeck.json()
+	else:
+		raise RuntimeError("Error in downloading dessign data, Geodesignhub returned with a status code %s " % synthesischeck.status_code)
 	
 	print(colored("Downloading project features from the synthesis...","yellow"))
 	try:
@@ -336,7 +340,7 @@ if __name__ == "__main__":
 		print("Allocating for " + curSysAreaToBeAllocated['name'])
 		alreadyAllocatedFeats = [] # a object to hold already allocated features for this system.
 		sysid = curSysAreaToBeAllocated['systemid'] # the id of the current system
-		evalfeatures = (item for item in allEvalSortedFeatures if item["systemid"] == sysid).next() # get the evaluation feature object.
+		evalfeatures = next((item for item in allEvalSortedFeatures if item["systemid"] == sysid)) # get the evaluation feature object.
 		totalIntersectedArea = 0 # variable to hold the intersected area.
 		curSysPriority = curSysAreaToBeAllocated['priority']
 		curSysName = curSysAreaToBeAllocated['name']
@@ -354,7 +358,7 @@ if __name__ == "__main__":
 
 					for curiFeat in iFeats: # iterate over the evaluation features. 
 						if totalIntersectedArea < curSysAreaToBeAllocated['targetarea']: # if the area of intersectio is less then the target area. 
-							curevalfeat = (item for item in evalfeatures['features'][curAllocationColor] if item["id"] == curiFeat).next() # get the evaluation featre with the id
+							curevalfeat = next((item for item in evalfeatures['features'][curAllocationColor] if item["id"] == curiFeat)) # get the evaluation featre with the id
 							try:
 								# Since this is the first system, create a allreaded allocated RTree
 								assert syscounter != 0
